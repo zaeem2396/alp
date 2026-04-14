@@ -26,12 +26,7 @@
         "test": "phpunit --colors=always",
         "analyse": "phpstan analyse --memory-limit=1G",
         "format": "pint",
-        "format:test": "pint --test",
-        "pre-push": [
-            "@format:test",
-            "@analyse",
-            "@test"
-        ]
+        "format:test": "pint --test"
     },
     "config": {
         "sort-packages": true,
@@ -40,12 +35,5 @@
         }
     },
     "minimum-stability": "stable",
-    "prefer-stable": true,
-    "extra": {
-        "laravel": {
-            "providers": [
-                "App\\Providers\\ALPServiceProvider"
-            ]
-        }
-    }
+    "prefer-stable": true
 }
