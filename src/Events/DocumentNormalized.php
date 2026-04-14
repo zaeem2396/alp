@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Events;
 
-final class DocumentProcessed
+final class DocumentNormalized
 {
     public function __construct(
         public readonly string $documentId,
