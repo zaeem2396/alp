@@ -6,8 +6,5 @@ namespace App\Events;
 
 final class DocumentProcessed
 {
-    public function __construct(
-        public readonly string $documentId,
-        public readonly string $processedPath
-    ) {}
+    public function __construct(public readonly string $documentId) {}
 }
