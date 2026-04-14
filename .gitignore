@@ -1,0 +1,6 @@
+/vendor/
+/.idea/
+/.vscode/
+/.phpunit.cache/
+/coverage/
+/docs/roadmap.md
