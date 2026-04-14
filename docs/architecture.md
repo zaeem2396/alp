@@ -16,6 +16,14 @@
 4. Lifecycle events are dispatched during upload/normalization/processing.
 5. Extraction services use the Apryse client contract for text/metadata payloads.
 
+## v0.2.0 Additions
+
+1. Layout and table extraction services generate structured page zones and tabular cells.
+2. AI layer introduces provider abstraction via `AiManager` and `AiProviderInterface`.
+3. AI workflows now include summarization, entity extraction, and document Q&A services.
+4. Structured JSON outputs are persisted through `StructuredDocumentService`.
+5. Named pipeline execution is available through `PipelineService::run(...)`.
+
 ## Quality Gates
 
 - Style: Laravel Pint

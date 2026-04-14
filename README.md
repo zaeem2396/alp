@@ -5,6 +5,7 @@ ALP is a Laravel-first document intelligence platform that converts unstructured
 ## Current Scope
 
 - v0.1.0 implementation in progress with ingestion, normalization, extraction, and event foundations.
+- v0.2.0 implementation started with table/layout parsing, AI provider abstractions, and structured document store foundations.
 - PHP 8.2+ and Laravel 11+ support.
 - CI guardrails for style, static analysis, and tests.
 
