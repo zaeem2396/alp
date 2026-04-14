@@ -29,8 +29,12 @@ final class ALPServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__.'/../../../config/alp.php', 'alp');
 
         $this->app->singleton(ApryseClientInterface::class, AprysePhpClient::class);
-        $this->app->singleton(DocumentRepositoryInterface::class, DocumentRepository::class);
-        $this->app->singleton(DocumentStorageInterface::class, DocumentStorageService::class);
+        $this->app->scoped(DocumentRepositoryInterface::class, DocumentRepository::class);
+        $this->app->singleton(DocumentStorageInterface::class, function ($app): DocumentStorageInterface {
+            $basePath = (string) $app['config']->get('alp.storage.base_path', '/tmp/alp');
+
+            return new DocumentStorageService($basePath);
+        });
         $this->app->singleton(PdfNormalizer::class);
         $this->app->singleton(DocxNormalizer::class);
         $this->app->singleton(DocumentNormalizerService::class, function ($app): DocumentNormalizerService {
@@ -40,11 +44,11 @@ final class ALPServiceProvider extends ServiceProvider
             ]);
         });
 
-        $this->app->singleton(TextExtractionService::class);
-        $this->app->singleton(MetadataExtractionService::class);
-        $this->app->singleton(DocumentIngestionService::class);
-        $this->app->singleton(DocumentService::class);
-        $this->app->singleton(DocumentManager::class);
+        $this->app->scoped(TextExtractionService::class);
+        $this->app->scoped(MetadataExtractionService::class);
+        $this->app->scoped(DocumentIngestionService::class);
+        $this->app->scoped(DocumentService::class);
+        $this->app->scoped(DocumentManager::class);
         $this->app->singleton(PipelineManager::class);
     }
 
