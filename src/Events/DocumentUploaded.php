@@ -6,5 +6,8 @@ namespace App\Events;
 
 final class DocumentUploaded
 {
-    public function __construct(public readonly string $documentId) {}
+    public function __construct(
+        public readonly string $documentId,
+        public readonly string $rawPath
+    ) {}
 }
