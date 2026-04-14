@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Tests\Unit;
 
 use App\Pipelines\PipelineManager;
+use App\Pipelines\Steps\DetectTables;
+use App\Pipelines\Steps\ExtractText;
+use App\Pipelines\Steps\StoreDocument;
 use App\Services\PipelineService;
 use PHPUnit\Framework\TestCase;
 
@@ -14,9 +17,9 @@ final class V020PipelineServiceTest extends TestCase
     {
         $manager = new PipelineManager([
             'extract-basic' => [
-                \App\Pipelines\Steps\ExtractText::class,
-                \App\Pipelines\Steps\DetectTables::class,
-                \App\Pipelines\Steps\StoreDocument::class,
+                ExtractText::class,
+                DetectTables::class,
+                StoreDocument::class,
             ],
         ]);
         $service = new PipelineService($manager);

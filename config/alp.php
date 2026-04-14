@@ -1,6 +1,9 @@
 <?php
 
 declare(strict_types=1);
+use App\Pipelines\Steps\DetectTables;
+use App\Pipelines\Steps\ExtractText;
+use App\Pipelines\Steps\StoreDocument;
 
 return [
     'default_pipeline' => 'extract-basic',
@@ -13,9 +16,9 @@ return [
     ],
     'pipelines' => [
         'extract-basic' => [
-            \App\Pipelines\Steps\ExtractText::class,
-            \App\Pipelines\Steps\DetectTables::class,
-            \App\Pipelines\Steps\StoreDocument::class,
+            ExtractText::class,
+            DetectTables::class,
+            StoreDocument::class,
         ],
     ],
     'storage' => [

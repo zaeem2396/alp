@@ -5,24 +5,29 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Console\InstallAlpCommand;
+use App\Contracts\AiProviderInterface;
 use App\Contracts\ApryseClientInterface;
 use App\Contracts\DocumentRepositoryInterface;
 use App\Contracts\DocumentStorageInterface;
+use App\Contracts\LayoutParserInterface;
+use App\Contracts\StructuredDocumentRepositoryInterface;
 use App\Normalizers\DocxNormalizer;
 use App\Normalizers\PdfNormalizer;
+use App\Pipelines\Contracts\PipelineStepInterface;
 use App\Pipelines\PipelineManager;
 use App\Repositories\DocumentRepository;
+use App\Repositories\StructuredDocumentRepository;
+use App\Services\AI\AiManager;
+use App\Services\AI\DocumentQaService;
+use App\Services\AI\DocumentSummarizationService;
+use App\Services\AI\EntityExtractionService;
+use App\Services\AI\LocalAiProvider;
 use App\Services\AprysePhpClient;
 use App\Services\DocumentIngestionService;
 use App\Services\DocumentManager;
 use App\Services\DocumentNormalizerService;
 use App\Services\DocumentService;
 use App\Services\DocumentStorageService;
-use App\Services\AI\AiManager;
-use App\Services\AI\DocumentQaService;
-use App\Services\AI\DocumentSummarizationService;
-use App\Services\AI\EntityExtractionService;
-use App\Services\AI\LocalAiProvider;
 use App\Services\Layout\DefaultLayoutParser;
 use App\Services\LayoutParsingService;
 use App\Services\MetadataExtractionService;
@@ -30,10 +35,6 @@ use App\Services\PipelineService;
 use App\Services\StructuredDocumentService;
 use App\Services\TableDetectionService;
 use App\Services\TextExtractionService;
-use App\Contracts\AiProviderInterface;
-use App\Contracts\LayoutParserInterface;
-use App\Contracts\StructuredDocumentRepositoryInterface;
-use App\Repositories\StructuredDocumentRepository;
 use Illuminate\Support\ServiceProvider;
 
 final class ALPServiceProvider extends ServiceProvider
@@ -83,7 +84,7 @@ final class ALPServiceProvider extends ServiceProvider
 
         $this->app->singleton(LayoutParserInterface::class, DefaultLayoutParser::class);
         $this->app->singleton(PipelineManager::class, function ($app): PipelineManager {
-            /** @var array<string, list<class-string<\App\Pipelines\Contracts\PipelineStepInterface>>> $pipelines */
+            /** @var array<string, list<class-string<PipelineStepInterface>>> $pipelines */
             $pipelines = (array) $app['config']->get('alp.pipelines', []);
 
             return new PipelineManager($pipelines);

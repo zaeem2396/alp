@@ -40,7 +40,7 @@ final class PipelineManager
 
         $steps = [];
         foreach ($this->namedPipelines[$name] as $stepClass) {
-            $steps[] = new $stepClass();
+            $steps[] = new $stepClass;
         }
 
         return $this->run($steps, $context);

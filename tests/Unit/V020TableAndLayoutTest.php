@@ -13,7 +13,7 @@ final class V020TableAndLayoutTest extends TestCase
 {
     public function test_detects_table_cells_from_csv_like_text(): void
     {
-        $service = new TableDetectionService();
+        $service = new TableDetectionService;
         $result = $service->detect("item,amount\nBook,12.00");
 
         self::assertCount(1, $result['tables']);
@@ -22,7 +22,7 @@ final class V020TableAndLayoutTest extends TestCase
 
     public function test_parses_text_into_layout_zones(): void
     {
-        $service = new LayoutParsingService(new DefaultLayoutParser());
+        $service = new LayoutParsingService(new DefaultLayoutParser);
         $layout = $service->parse("Invoice\nLine one\nLine two");
 
         self::assertSame(1, $layout['pages']);
