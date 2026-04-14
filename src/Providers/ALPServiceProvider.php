@@ -26,6 +26,7 @@ use App\Services\AI\LocalAiProvider;
 use App\Services\Layout\DefaultLayoutParser;
 use App\Services\LayoutParsingService;
 use App\Services\MetadataExtractionService;
+use App\Services\PipelineService;
 use App\Services\StructuredDocumentService;
 use App\Services\TableDetectionService;
 use App\Services\TextExtractionService;
@@ -64,6 +65,7 @@ final class ALPServiceProvider extends ServiceProvider
         $this->app->scoped(DocumentIngestionService::class);
         $this->app->scoped(DocumentService::class);
         $this->app->scoped(DocumentManager::class);
+        $this->app->scoped(PipelineService::class);
         $this->app->scoped(StructuredDocumentRepositoryInterface::class, StructuredDocumentRepository::class);
         $this->app->scoped(StructuredDocumentService::class);
 
