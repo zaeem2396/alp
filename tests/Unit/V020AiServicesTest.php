@@ -42,4 +42,13 @@ final class V020AiServicesTest extends TestCase
         self::assertNotSame('', $result['answer']);
         self::assertSame([0], $result['citations']);
     }
+
+    public function test_document_qa_whitespace_only_chunk_has_no_citations(): void
+    {
+        $provider = new LocalAiProvider;
+        $result = $provider->answerQuestion('What?', ['   ']);
+
+        self::assertStringContainsString('No context available', $result['answer']);
+        self::assertSame([], $result['citations']);
+    }
 }

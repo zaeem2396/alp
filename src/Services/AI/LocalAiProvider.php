@@ -36,13 +36,14 @@ final class LocalAiProvider implements AiProviderInterface
     public function answerQuestion(string $question, array $chunks, array $context = []): array
     {
         $firstChunk = $chunks[0] ?? '';
-        $answer = trim($firstChunk) !== ''
+        $hasUsableContext = trim($firstChunk) !== '';
+        $answer = $hasUsableContext
             ? sprintf('Answer based on chunk: %s', mb_strimwidth($firstChunk, 0, 120, '...'))
             : sprintf('No context available to answer: %s', $question);
 
         return [
             'answer' => $answer,
-            'citations' => $firstChunk === '' ? [] : [0],
+            'citations' => $hasUsableContext ? [0] : [],
         ];
     }
 }

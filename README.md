@@ -1,24 +1,153 @@
 # Apryse Laravel Platform (ALP)
 
-ALP is a Laravel-first document intelligence platform that converts unstructured files into extraction artifacts, metadata, and pipeline-ready outputs.
+ALP is a Laravel-first document intelligence layer that turns unstructured files (PDF, DOCX, etc.) into extraction artifacts, layout/table structures, AI-derived summaries and entities, and structured JSON suitable for storage and downstream pipelines.
 
-## Current Scope
+## Requirements
 
-- v0.1.0 implementation in progress with ingestion, normalization, extraction, and event foundations.
-- v0.2.0 implementation started with table/layout parsing, AI provider abstractions, and structured document store foundations.
-- PHP 8.2+ and Laravel 11+ support.
-- CI guardrails for style, static analysis, and tests.
+- **PHP** 8.2+
+- **Laravel** 11+ (this repository targets framework APIs used by Laravel packages)
+- **Composer** 2.x
 
-## Quality Commands
+## Current scope
 
-- `composer format:test`
-- `composer analyse`
-- `composer test`
-- `composer pre-push`
+- **v0.1.0**: ingestion, normalization, extraction, events, and service-provider wiring.
+- **v0.2.0 (in progress)**: table/layout parsing, AI provider abstraction, structured document store scaffolding, named pipeline execution, and queue job stubs.
 
-## Structure
+## Repository layout
 
-- `src/` core ALP codebase
-- `config/alp.php` ALP config
-- `database/migrations/` ALP schema
-- `docs/` product and implementation docs
+| Path | Purpose |
+|------|---------|
+| `src/` | ALP application code (`App\` namespace) |
+| `config/alp.php` | Published ALP configuration |
+| `database/migrations/` | Schema migrations (e.g. `documents`, `structured_documents`) |
+| `routes/web.php` | Example HTTP routes (e.g. document upload) |
+| `tests/` | PHPUnit unit tests |
+| `docs/` | Architecture and version status notes |
+
+## Local setup (developer machine)
+
+Clone the repository and install PHP dependencies:
+
+```bash
+composer install
+```
+
+Run the full quality gate (same checks as `composer pre-push`):
+
+```bash
+composer pre-push
+```
+
+Individual scripts:
+
+| Command | What it runs |
+|---------|----------------|
+| `composer format:test` | Laravel Pint in check-only mode |
+| `composer analyse` | PHPStan |
+| `composer test` | PHPUnit |
+
+## Installing ALP in a Laravel application
+
+ALP is packaged as Laravel-discoverable: `composer.json` registers `App\Providers\ALPServiceProvider` under `extra.laravel.providers`. After you add this package to your app (path repository, VCS, or packagist), run:
+
+```bash
+composer require zaeem/alp
+```
+
+Then publish configuration (optional but recommended):
+
+```bash
+php artisan alp:install
+```
+
+That publishes `config/alp.php` into your app’s `config/` directory.
+
+Register routes if you use ALP’s example HTTP surface: either copy the contents of `routes/web.php` from this repo into your app’s `routes/web.php`, or include a route file that defines `POST /documents` as in this project.
+
+Run migrations from your Laravel app root (after publishing or merging migrations):
+
+```bash
+php artisan migrate
+```
+
+## Configuration
+
+After publishing, edit `config/alp.php` in your application. Key groups:
+
+- **`default_pipeline`**: default pipeline name (see `pipelines` keys).
+- **`queue`**: queue connection/name hint (`ALP_QUEUE` env).
+- **`ai`**: AI provider selection (`ALP_AI_PROVIDER`, default `local`).
+- **`pipelines`**: named pipelines mapping to step class names implementing `PipelineStepInterface`.
+- **`storage`**: filesystem-related settings (`ALP_STORAGE_PATH`, disk hints).
+
+### Environment variables (common)
+
+| Variable | Purpose | Default (in config) |
+|----------|---------|----------------------|
+| `ALP_QUEUE` | Queue name/connection context for jobs | `default` |
+| `ALP_AI_PROVIDER` | Active AI provider key | `local` |
+| `ALP_STORAGE_PATH` | Base path for raw/processed file storage | `/tmp/alp` |
+| `ALP_RAW_DISK` | Laravel disk name for raw blobs (future use) | `local` |
+| `ALP_PROCESSED_DISK` | Laravel disk name for processed blobs (future use) | `local` |
+
+## Usage
+
+### HTTP: upload document (example route)
+
+The package ships with an example `POST /documents` handler that accepts JSON:
+
+```json
+{
+  "name": "invoice-001",
+  "content": "<binary or text content as string for the demo>",
+  "extension": "pdf"
+}
+```
+
+Allowed `extension` values in the demo request: `pdf`, `docx`.
+
+Response (201): document `id`, `name`, and `status`.
+
+### Programmatic: facades (in a Laravel app)
+
+With default Laravel facade aliases, you can resolve:
+
+- **`Document`** facade → `DocumentManager` (ingestion, extraction, tables, layout, AI helpers).
+- **`Pipeline`** facade → `PipelineManager` (runs configured pipelines).
+
+Example (conceptual — adjust imports to your app’s facade wiring):
+
+```php
+use App\Facades\Document;
+use App\Facades\Pipeline;
+
+$doc = Document::ingest('My doc', $fileContents, 'pdf');
+$tables = Document::detectTables($someText);
+$layout = Document::parseLayout($someText);
+$summary = Document::summarize($doc->id, $someText);
+
+Pipeline::run('extract-basic', ['document_id' => $doc->id]);
+```
+
+Named pipelines are defined under `config/alp.php` → `pipelines` (e.g. `extract-basic`).
+
+### Queue jobs (v0.2 scaffolding)
+
+- `ExtractTablesJob` — async table detection from text.
+- `GenerateSummaryJob` — async summarization.
+
+Dispatch these from your application when wiring workers; ensure `queue` workers are running (`php artisan queue:work`) and `ALP_QUEUE` / Laravel queue settings match your deployment.
+
+### Structured documents
+
+`StructuredDocumentService` persists summarized/entity payloads through `StructuredDocumentRepositoryInterface`. The default in-memory repository is suitable for tests; production apps should replace the binding with a database-backed implementation aligned with `database/migrations/create_structured_documents_table.php`.
+
+## Documentation
+
+- `docs/architecture.md` — layer overview and v0.2 additions.
+- `docs/v0.1.0-status.md` — v0.1 completion notes.
+- `docs/v0.2.0-status.md` — v0.2 progress and remaining work.
+
+## License
+
+MIT (see `composer.json`).
