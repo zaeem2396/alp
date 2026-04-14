@@ -2,4 +2,7 @@
 
 declare(strict_types=1);
 
-// Optional dashboard routes will live here.
+use App\Http\Controllers\DocumentController;
+use Illuminate\Support\Facades\Route;
+
+Route::post('/documents', [DocumentController::class, 'store']);

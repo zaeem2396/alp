@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace App\Facades;
 
-final class Document
+use App\Services\DocumentManager;
+use Illuminate\Support\Facades\Facade;
+
+final class Document extends Facade
 {
-    public static function upload(string $path): string
+    protected static function getFacadeAccessor(): string
     {
-        return sprintf('Uploaded: %s', $path);
+        return DocumentManager::class;
     }
 }
