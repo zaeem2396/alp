@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace App\Facades;
 
-final class Pipeline
+use App\Pipelines\PipelineManager;
+use Illuminate\Support\Facades\Facade;
+
+final class Pipeline extends Facade
 {
-    public static function run(string $pipelineName): string
+    protected static function getFacadeAccessor(): string
     {
-        return sprintf('Pipeline ran: %s', $pipelineName);
+        return PipelineManager::class;
     }
 }
