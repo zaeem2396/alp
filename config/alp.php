@@ -11,6 +11,13 @@ return [
             'local' => true,
         ],
     ],
+    'pipelines' => [
+        'extract-basic' => [
+            \App\Pipelines\Steps\ExtractText::class,
+            \App\Pipelines\Steps\DetectTables::class,
+            \App\Pipelines\Steps\StoreDocument::class,
+        ],
+    ],
     'storage' => [
         'base_path' => env('ALP_STORAGE_PATH', '/tmp/alp'),
         'raw_disk' => env('ALP_RAW_DISK', 'local'),

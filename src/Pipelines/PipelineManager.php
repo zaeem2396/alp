@@ -5,9 +5,15 @@ declare(strict_types=1);
 namespace App\Pipelines;
 
 use App\Pipelines\Contracts\PipelineStepInterface;
+use InvalidArgumentException;
 
 final class PipelineManager
 {
+    /**
+     * @param  array<string, list<class-string<PipelineStepInterface>>>  $namedPipelines
+     */
+    public function __construct(private readonly array $namedPipelines = []) {}
+
     /**
      * @param  list<PipelineStepInterface>  $steps
      * @param  array<string, mixed>  $context
@@ -20,5 +26,23 @@ final class PipelineManager
         }
 
         return $context;
+    }
+
+    /**
+     * @param  array<string, mixed>  $context
+     * @return array<string, mixed>
+     */
+    public function runNamed(string $name, array $context = []): array
+    {
+        if (! array_key_exists($name, $this->namedPipelines)) {
+            throw new InvalidArgumentException(sprintf('Pipeline [%s] is not defined.', $name));
+        }
+
+        $steps = [];
+        foreach ($this->namedPipelines[$name] as $stepClass) {
+            $steps[] = new $stepClass();
+        }
+
+        return $this->run($steps, $context);
     }
 }

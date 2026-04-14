@@ -18,8 +18,21 @@ use App\Services\DocumentManager;
 use App\Services\DocumentNormalizerService;
 use App\Services\DocumentService;
 use App\Services\DocumentStorageService;
+use App\Services\AI\AiManager;
+use App\Services\AI\DocumentQaService;
+use App\Services\AI\DocumentSummarizationService;
+use App\Services\AI\EntityExtractionService;
+use App\Services\AI\LocalAiProvider;
+use App\Services\Layout\DefaultLayoutParser;
+use App\Services\LayoutParsingService;
 use App\Services\MetadataExtractionService;
+use App\Services\StructuredDocumentService;
+use App\Services\TableDetectionService;
 use App\Services\TextExtractionService;
+use App\Contracts\AiProviderInterface;
+use App\Contracts\LayoutParserInterface;
+use App\Contracts\StructuredDocumentRepositoryInterface;
+use App\Repositories\StructuredDocumentRepository;
 use Illuminate\Support\ServiceProvider;
 
 final class ALPServiceProvider extends ServiceProvider
@@ -46,10 +59,33 @@ final class ALPServiceProvider extends ServiceProvider
 
         $this->app->scoped(TextExtractionService::class);
         $this->app->scoped(MetadataExtractionService::class);
+        $this->app->scoped(TableDetectionService::class);
+        $this->app->scoped(LayoutParsingService::class);
         $this->app->scoped(DocumentIngestionService::class);
         $this->app->scoped(DocumentService::class);
         $this->app->scoped(DocumentManager::class);
-        $this->app->singleton(PipelineManager::class);
+        $this->app->scoped(StructuredDocumentRepositoryInterface::class, StructuredDocumentRepository::class);
+        $this->app->scoped(StructuredDocumentService::class);
+
+        $this->app->singleton(AiProviderInterface::class, LocalAiProvider::class);
+        $this->app->singleton(AiManager::class, function ($app): AiManager {
+            /** @var AiProviderInterface $provider */
+            $provider = $app->make(AiProviderInterface::class);
+            $defaultProvider = (string) $app['config']->get('alp.ai.default', 'local');
+
+            return new AiManager(['local' => $provider], $defaultProvider);
+        });
+        $this->app->scoped(DocumentSummarizationService::class);
+        $this->app->scoped(EntityExtractionService::class);
+        $this->app->scoped(DocumentQaService::class);
+
+        $this->app->singleton(LayoutParserInterface::class, DefaultLayoutParser::class);
+        $this->app->singleton(PipelineManager::class, function ($app): PipelineManager {
+            /** @var array<string, list<class-string<\App\Pipelines\Contracts\PipelineStepInterface>>> $pipelines */
+            $pipelines = (array) $app['config']->get('alp.pipelines', []);
+
+            return new PipelineManager($pipelines);
+        });
     }
 
     public function boot(): void
