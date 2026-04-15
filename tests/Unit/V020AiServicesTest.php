@@ -6,10 +6,12 @@ namespace Tests\Unit;
 
 use App\Repositories\StructuredDocumentRepository;
 use App\Services\AI\AiManager;
+use App\Services\AI\AnthropicProvider;
 use App\Services\AI\DocumentQaService;
 use App\Services\AI\DocumentSummarizationService;
 use App\Services\AI\EntityExtractionService;
 use App\Services\AI\LocalAiProvider;
+use App\Services\AI\OpenAiProvider;
 use App\Services\StructuredDocumentService;
 use PHPUnit\Framework\TestCase;
 
@@ -34,13 +36,25 @@ final class V020AiServicesTest extends TestCase
 
     public function test_document_qa_returns_citations(): void
     {
-        $manager = new AiManager(['local' => new LocalAiProvider], 'local');
+        $manager = new AiManager(['local' => new LocalAiProvider, 'openai' => new OpenAiProvider], 'local');
         $qaService = new DocumentQaService($manager);
 
         $result = $qaService->ask('What is total?', ['Total: 45.00']);
 
         self::assertNotSame('', $result['answer']);
         self::assertSame([0], $result['citations']);
+    }
+
+    public function test_ai_manager_supports_multiple_providers(): void
+    {
+        $manager = new AiManager([
+            'local' => new LocalAiProvider,
+            'openai' => new OpenAiProvider,
+            'anthropic' => new AnthropicProvider,
+        ], 'local');
+
+        self::assertStringStartsWith('[openai]', $manager->provider('openai')->summarize('hello world'));
+        self::assertStringStartsWith('[anthropic]', $manager->provider('anthropic')->summarize('hello world'));
     }
 
     public function test_document_qa_whitespace_only_chunk_has_no_citations(): void

@@ -23,7 +23,26 @@ final class EntityExtractionService
         array $schema = [],
         ?string $provider = null
     ): array {
-        $entities = $this->aiManager->provider($provider)->extractEntities($text, $schema);
+        $validatedSchema = [];
+        foreach ($schema as $field => $pattern) {
+            if (! is_string($pattern) || @preg_match($pattern, '') === false) {
+                continue;
+            }
+
+            $validatedSchema[$field] = $pattern;
+        }
+
+        $entities = $this->aiManager->provider($provider)->extractEntities($text, $validatedSchema);
+        foreach ($entities as $field => $entity) {
+            if (! is_array($entity)) {
+                continue;
+            }
+
+            $entities[$field]['provenance'] = [
+                'source' => 'text',
+                'document_id' => $documentId,
+            ];
+        }
         $this->structuredDocuments->store($documentId, 'entities', ['entities' => $entities], 1);
 
         return $entities;

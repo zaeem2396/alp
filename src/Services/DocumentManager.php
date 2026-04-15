@@ -52,11 +52,27 @@ final class DocumentManager
     }
 
     /**
+     * @return array{tables:list<array{table_id:string,cells:list<array{row:int,col:int,text:string}>,confidence:float}>}
+     */
+    public function detectTablesForDocument(string $documentId, string $text): array
+    {
+        return $this->tableDetection->detectForDocument($documentId, $text);
+    }
+
+    /**
      * @return array{zones:list<array{type:string,text:string,page:int}>,pages:int}
      */
     public function parseLayout(string $text): array
     {
         return $this->layoutParsing->parse($text);
+    }
+
+    /**
+     * @return array{zones:list<array{type:string,text:string,page:int}>,pages:int}
+     */
+    public function parseLayoutForDocument(string $documentId, string $text): array
+    {
+        return $this->layoutParsing->parseForDocument($documentId, $text);
     }
 
     public function summarize(string $documentId, string $text): string

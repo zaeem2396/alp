@@ -12,6 +12,8 @@ return [
         'default' => env('ALP_AI_PROVIDER', 'local'),
         'providers' => [
             'local' => true,
+            'openai' => true,
+            'anthropic' => true,
         ],
     ],
     'pipelines' => [

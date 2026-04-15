@@ -9,6 +9,13 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 
 final class ExtractTablesJob implements ShouldQueue
 {
+    public int $tries = 3;
+
+    /**
+     * @var list<int>
+     */
+    public array $backoff = [10, 30, 90];
+
     public function __construct(
         private readonly string $documentId,
         private readonly string $text
@@ -19,7 +26,7 @@ final class ExtractTablesJob implements ShouldQueue
      */
     public function handle(TableDetectionService $tableDetection): array
     {
-        $tables = $tableDetection->detect($this->text);
+        $tables = $tableDetection->detectForDocument($this->documentId, $this->text);
 
         return [
             'document_id' => $this->documentId,
