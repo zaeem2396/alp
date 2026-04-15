@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Application\Services\DocumentIntelligenceService;
+use App\Application\Services\PipelineOrchestrator;
 use App\Console\InstallAlpCommand;
 use App\Contracts\AiProviderInterface;
 use App\Contracts\ApryseClientInterface;
@@ -11,9 +13,14 @@ use App\Contracts\DocumentRepositoryInterface;
 use App\Contracts\DocumentStorageInterface;
 use App\Contracts\LayoutParserInterface;
 use App\Contracts\StructuredDocumentRepositoryInterface;
+use App\Infrastructure\Apryse\Clients\ApryseClientAdapter;
+use App\Infrastructure\Apryse\Services\ApryseExtractionService;
+use App\Infrastructure\Storage\DocumentStorageAdapter;
 use App\Normalizers\DocxNormalizer;
 use App\Normalizers\PdfNormalizer;
+use App\Pipelines\Contracts\PipelineEngineInterface;
 use App\Pipelines\Contracts\PipelineStepInterface;
+use App\Pipelines\Engine\PipelineEngine;
 use App\Pipelines\PipelineManager;
 use App\Repositories\DocumentRepository;
 use App\Repositories\StructuredDocumentRepository;
@@ -98,6 +105,11 @@ final class ALPServiceProvider extends ServiceProvider
         $this->app->scoped(DocumentSummarizationService::class);
         $this->app->scoped(EntityExtractionService::class);
         $this->app->scoped(DocumentQaService::class);
+        $this->app->scoped(DocumentIntelligenceService::class);
+        $this->app->scoped(PipelineOrchestrator::class);
+        $this->app->singleton(ApryseClientAdapter::class);
+        $this->app->singleton(ApryseExtractionService::class);
+        $this->app->singleton(DocumentStorageAdapter::class);
 
         $this->app->singleton(LayoutParserInterface::class, DefaultLayoutParser::class);
         $this->app->singleton(PipelineManager::class, function ($app): PipelineManager {
@@ -106,6 +118,7 @@ final class ALPServiceProvider extends ServiceProvider
 
             return new PipelineManager($pipelines);
         });
+        $this->app->scoped(PipelineEngineInterface::class, PipelineEngine::class);
     }
 
     public function boot(): void

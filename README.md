@@ -24,6 +24,40 @@ ALP is a Laravel-first document intelligence layer that turns unstructured files
 | `tests/` | PHPUnit unit tests |
 | `docs/` | Local project notes (roadmap/usage) |
 
+### DDD/Clean Architecture layout
+
+```text
+src/
+  Domain/
+    Document/
+      Models/
+      Contracts/
+      ValueObjects/
+    Pipeline/
+      Contracts/
+      Definitions/
+  Application/
+    Services/
+    Jobs/
+    Events/
+    DTOs/
+  Infrastructure/
+    Apryse/
+      Clients/
+      Services/
+    AI/
+      Providers/
+      Prompts/
+    Storage/
+  Pipelines/
+    Contracts/
+    Steps/
+    Engine/
+  Repositories/
+  Facades/
+  Providers/
+```
+
 ## Local setup (developer machine)
 
 Clone the repository and install PHP dependencies:
