@@ -18,10 +18,12 @@ use App\Pipelines\PipelineManager;
 use App\Repositories\DocumentRepository;
 use App\Repositories\StructuredDocumentRepository;
 use App\Services\AI\AiManager;
+use App\Services\AI\AnthropicProvider;
 use App\Services\AI\DocumentQaService;
 use App\Services\AI\DocumentSummarizationService;
 use App\Services\AI\EntityExtractionService;
 use App\Services\AI\LocalAiProvider;
+use App\Services\AI\OpenAiProvider;
 use App\Services\AprysePhpClient;
 use App\Services\DocumentIngestionService;
 use App\Services\DocumentManager;
@@ -67,16 +69,31 @@ final class ALPServiceProvider extends ServiceProvider
         $this->app->scoped(DocumentService::class);
         $this->app->scoped(DocumentManager::class);
         $this->app->scoped(PipelineService::class);
-        $this->app->scoped(StructuredDocumentRepositoryInterface::class, StructuredDocumentRepository::class);
+        $this->app->scoped(StructuredDocumentRepositoryInterface::class, function ($app): StructuredDocumentRepositoryInterface {
+            $basePath = (string) $app['config']->get('alp.storage.base_path', '/tmp/alp');
+
+            return new StructuredDocumentRepository(sprintf('%s/structured_documents.json', rtrim($basePath, '/')));
+        });
         $this->app->scoped(StructuredDocumentService::class);
 
+        $this->app->singleton(LocalAiProvider::class);
+        $this->app->singleton(OpenAiProvider::class);
+        $this->app->singleton(AnthropicProvider::class);
         $this->app->singleton(AiProviderInterface::class, LocalAiProvider::class);
         $this->app->singleton(AiManager::class, function ($app): AiManager {
-            /** @var AiProviderInterface $provider */
-            $provider = $app->make(AiProviderInterface::class);
+            /** @var LocalAiProvider $localProvider */
+            $localProvider = $app->make(LocalAiProvider::class);
+            /** @var OpenAiProvider $openAiProvider */
+            $openAiProvider = $app->make(OpenAiProvider::class);
+            /** @var AnthropicProvider $anthropicProvider */
+            $anthropicProvider = $app->make(AnthropicProvider::class);
             $defaultProvider = (string) $app['config']->get('alp.ai.default', 'local');
 
-            return new AiManager(['local' => $provider], $defaultProvider);
+            return new AiManager([
+                'local' => $localProvider,
+                'openai' => $openAiProvider,
+                'anthropic' => $anthropicProvider,
+            ], $defaultProvider);
         });
         $this->app->scoped(DocumentSummarizationService::class);
         $this->app->scoped(EntityExtractionService::class);

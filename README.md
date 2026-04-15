@@ -11,7 +11,7 @@ ALP is a Laravel-first document intelligence layer that turns unstructured files
 ## Current scope
 
 - **v0.1.0**: ingestion, normalization, extraction, events, and service-provider wiring.
-- **v0.2.0 (in progress)**: table/layout parsing, AI provider abstraction, structured document store scaffolding, named pipeline execution, and queue job stubs.
+- **v0.2.0**: table/layout parsing, multi-provider AI abstraction, structured document persistence, named pipeline execution, and async jobs.
 
 ## Repository layout
 
@@ -22,7 +22,7 @@ ALP is a Laravel-first document intelligence layer that turns unstructured files
 | `database/migrations/` | Schema migrations (e.g. `documents`, `structured_documents`) |
 | `routes/web.php` | Example HTTP routes (e.g. document upload) |
 | `tests/` | PHPUnit unit tests |
-| `docs/` | Architecture and version status notes |
+| `docs/` | Local project notes (roadmap/usage) |
 
 ## Local setup (developer machine)
 
@@ -85,7 +85,7 @@ After publishing, edit `config/alp.php` in your application. Key groups:
 | Variable | Purpose | Default (in config) |
 |----------|---------|----------------------|
 | `ALP_QUEUE` | Queue name/connection context for jobs | `default` |
-| `ALP_AI_PROVIDER` | Active AI provider key | `local` |
+| `ALP_AI_PROVIDER` | Active AI provider key (`local`, `openai`, `anthropic`) | `local` |
 | `ALP_STORAGE_PATH` | Base path for raw/processed file storage | `/tmp/alp` |
 | `ALP_RAW_DISK` | Laravel disk name for raw blobs (future use) | `local` |
 | `ALP_PROCESSED_DISK` | Laravel disk name for processed blobs (future use) | `local` |
@@ -131,7 +131,7 @@ Pipeline::run('extract-basic', ['document_id' => $doc->id]);
 
 Named pipelines are defined under `config/alp.php` → `pipelines` (e.g. `extract-basic`).
 
-### Queue jobs (v0.2 scaffolding)
+### Queue jobs
 
 - `ExtractTablesJob` — async table detection from text.
 - `GenerateSummaryJob` — async summarization.
@@ -140,13 +140,12 @@ Dispatch these from your application when wiring workers; ensure `queue` workers
 
 ### Structured documents
 
-`StructuredDocumentService` persists summarized/entity payloads through `StructuredDocumentRepositoryInterface`. The default in-memory repository is suitable for tests; production apps should replace the binding with a database-backed implementation aligned with `database/migrations/create_structured_documents_table.php`.
+`StructuredDocumentService` persists summarized/entity payloads through `StructuredDocumentRepositoryInterface`. The default repository writes versioned payloads to a local JSON store under `ALP_STORAGE_PATH` (for easy local execution) and is aligned with the `structured_documents` migration contract.
 
 ## Documentation
 
-- `docs/architecture.md` — layer overview and v0.2 additions.
-- `docs/v0.1.0-status.md` — v0.1 completion notes.
-- `docs/v0.2.0-status.md` — v0.2 progress and remaining work.
+- `docs/roadmap.md` — full engineering roadmap (local-only file by default in this repo).
+- `docs/usage.md` — local detailed runbook and package usage notes (local-only file by default in this repo).
 
 ## License
 

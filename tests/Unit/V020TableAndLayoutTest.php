@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Tests\Unit;
 
+use App\Repositories\StructuredDocumentRepository;
 use App\Services\Layout\DefaultLayoutParser;
 use App\Services\LayoutParsingService;
+use App\Services\StructuredDocumentService;
 use App\Services\TableDetectionService;
 use PHPUnit\Framework\TestCase;
 
@@ -13,7 +15,8 @@ final class V020TableAndLayoutTest extends TestCase
 {
     public function test_detects_table_cells_from_csv_like_text(): void
     {
-        $service = new TableDetectionService;
+        $store = new StructuredDocumentService(new StructuredDocumentRepository('/tmp/alp-tests-v020-table.json'));
+        $service = new TableDetectionService($store);
         $result = $service->detect("item,amount\nBook,12.00");
 
         self::assertCount(1, $result['tables']);
@@ -22,7 +25,8 @@ final class V020TableAndLayoutTest extends TestCase
 
     public function test_parses_text_into_layout_zones(): void
     {
-        $service = new LayoutParsingService(new DefaultLayoutParser);
+        $store = new StructuredDocumentService(new StructuredDocumentRepository('/tmp/alp-tests-v020-layout.json'));
+        $service = new LayoutParsingService(new DefaultLayoutParser, $store);
         $layout = $service->parse("Invoice\nLine one\nLine two");
 
         self::assertSame(1, $layout['pages']);

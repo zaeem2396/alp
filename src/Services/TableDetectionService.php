@@ -6,6 +6,8 @@ namespace App\Services;
 
 final class TableDetectionService
 {
+    public function __construct(private readonly StructuredDocumentService $structuredDocuments) {}
+
     /**
      * @return array{tables:list<array{table_id:string,cells:list<array{row:int,col:int,text:string}>,confidence:float}>}
      */
@@ -41,5 +43,16 @@ final class TableDetectionService
                 ],
             ],
         ];
+    }
+
+    /**
+     * @return array{tables:list<array{table_id:string,cells:list<array{row:int,col:int,text:string}>,confidence:float}>}
+     */
+    public function detectForDocument(string $documentId, string $text): array
+    {
+        $tables = $this->detect($text);
+        $this->structuredDocuments->store($documentId, 'tables_v1', ['tables' => $tables['tables']], 1);
+
+        return $tables;
     }
 }
