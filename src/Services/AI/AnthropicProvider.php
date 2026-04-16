@@ -27,7 +27,7 @@ final class AnthropicProvider implements AiProviderInterface
             $entities[$field] = [
                 'value' => $matches[0] ?? null,
                 'confidence' => $matches === [] ? 0.0 : 0.9,
-                'model' => 'anthropic-placeholder',
+                'model' => 'anthropic',
             ];
         }
 
