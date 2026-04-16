@@ -85,7 +85,7 @@ Individual scripts:
 ALP is packaged as Laravel-discoverable: `composer.json` registers `App\Providers\ALPServiceProvider` under `extra.laravel.providers`. After you add this package to your app (path repository, VCS, or packagist), run:
 
 ```bash
-composer require zaeem/alp
+composer require zaeem2396/alp
 ```
 
 Then publish configuration (optional but recommended):
