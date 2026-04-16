@@ -24,10 +24,7 @@ final class EntityExtractionService
         array $schema = [],
         ?string $provider = null
     ): array {
-        $entities = $this->detector->detect($text);
-        if ($schema !== []) {
-            $entities = array_intersect_key($entities, $schema);
-        }
+        $entities = $this->detector->detect($text, $schema);
         foreach ($entities as $field => $entity) {
             if (! is_array($entity)) {
                 continue;
