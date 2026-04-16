@@ -1,104 +1,33 @@
 # Apryse Laravel Platform (ALP)
 
-ALP is a Laravel-first document intelligence layer that turns unstructured files (PDF, DOCX, etc.) into extraction artifacts, layout/table structures, AI-derived summaries and entities, and structured JSON suitable for storage and downstream pipelines.
+ALP is a Laravel-first document processing package that ingests documents, extracts text and metadata, runs configurable pipeline steps, and persists structured outputs for downstream AI and query workflows.
 
 ## Requirements
 
 - **PHP** 8.2+
-- **Laravel** 11+ (this repository targets framework APIs used by Laravel packages)
+- **Laravel** 11+
 - **Composer** 2.x
 
 ## Current scope
 
-- **v0.1.0**: ingestion, normalization, extraction, events, and service-provider wiring.
-- **v0.2.0**: table/layout parsing, multi-provider AI abstraction, structured document persistence, named pipeline execution, and async jobs.
+- **v0.1.0**: ingestion, normalization, extraction, events, and service-provider wiring
+- **v0.2.0**: table/layout parsing, structured artifact persistence, named pipelines, async jobs, and interface-driven extension points for extraction and AI summarization/entity detection
 
-## Repository layout
+## Install In A Laravel App
 
-| Path | Purpose |
-|------|---------|
-| `src/` | ALP application code (`App\` namespace) |
-| `config/alp.php` | Published ALP configuration |
-| `database/migrations/` | Schema migrations (e.g. `documents`, `structured_documents`) |
-| `routes/web.php` | Example HTTP routes (e.g. document upload) |
-| `tests/` | PHPUnit unit tests |
-| `docs/` | Local project notes (roadmap/usage) |
-
-### DDD/Clean Architecture layout
-
-```text
-src/
-  Domain/
-    Document/
-      Models/
-      Contracts/
-      ValueObjects/
-    Pipeline/
-      Contracts/
-      Definitions/
-  Application/
-    Services/
-    Jobs/
-    Events/
-    DTOs/
-  Infrastructure/
-    Apryse/
-      Clients/
-      Services/
-    AI/
-      Providers/
-      Prompts/
-    Storage/
-  Pipelines/
-    Contracts/
-    Steps/
-    Engine/
-  Repositories/
-  Facades/
-  Providers/
-```
-
-## Local setup (developer machine)
-
-Clone the repository and install PHP dependencies:
-
-```bash
-composer install
-```
-
-Run the full quality gate (same checks as `composer pre-push`):
-
-```bash
-composer pre-push
-```
-
-Individual scripts:
-
-| Command | What it runs |
-|---------|----------------|
-| `composer format:test` | Laravel Pint in check-only mode |
-| `composer analyse` | PHPStan |
-| `composer test` | PHPUnit |
-
-## Installing ALP in a Laravel application
-
-ALP is packaged as Laravel-discoverable: `composer.json` registers `App\Providers\ALPServiceProvider` under `extra.laravel.providers`. After you add this package to your app (path repository, VCS, or packagist), run:
+ALP is Laravel-discoverable through `extra.laravel.providers`, so a host application can install it with:
 
 ```bash
 composer require zaeem2396/alp
 ```
 
-Then publish configuration (optional but recommended):
+Publish the package configuration and package assets:
 
 ```bash
 php artisan alp:install
 ```
 
-That publishes `config/alp.php` into your app’s `config/` directory.
-
-Register routes if you use ALP’s example HTTP surface: either copy the contents of `routes/web.php` from this repo into your app’s `routes/web.php`, or include a route file that defines `POST /documents` as in this project.
-
-Run migrations from your Laravel app root (after publishing or merging migrations):
+Run your application migrations after publishing:
 
 ```bash
 php artisan migrate
@@ -106,81 +35,126 @@ php artisan migrate
 
 ## Configuration
 
-After publishing, edit `config/alp.php` in your application. Key groups:
+Edit `config/alp.php` in the host application after publishing it.
 
-- **`default_pipeline`**: default pipeline name (see `pipelines` keys).
-- **`queue`**: queue connection/name hint (`ALP_QUEUE` env).
-- **`ai`**: AI provider selection (`ALP_AI_PROVIDER`, default `local`).
-- **`pipelines`**: named pipelines mapping to step class names implementing `PipelineStepInterface`.
-- **`storage`**: filesystem-related settings (`ALP_STORAGE_PATH`, disk hints).
+| Key | Purpose |
+|---|---|
+| `default_pipeline` | Default named pipeline key |
+| `queue` | Queue name/context used by package jobs |
+| `ai.default` | Default AI provider key |
+| `pipelines` | Named pipeline definitions as step class lists |
+| `storage.base_path` | Base path for raw and derived local storage |
 
-### Environment variables (common)
+### Common environment variables
 
-| Variable | Purpose | Default (in config) |
-|----------|---------|----------------------|
-| `ALP_QUEUE` | Queue name/connection context for jobs | `default` |
-| `ALP_AI_PROVIDER` | Active AI provider key (`local`, `openai`, `anthropic`) | `local` |
-| `ALP_STORAGE_PATH` | Base path for raw/processed file storage | `/tmp/alp` |
-| `ALP_RAW_DISK` | Laravel disk name for raw blobs (future use) | `local` |
-| `ALP_PROCESSED_DISK` | Laravel disk name for processed blobs (future use) | `local` |
+| Variable | Purpose | Default |
+|---|---|---|
+| `ALP_QUEUE` | Queue name/context | `default` |
+| `ALP_AI_PROVIDER` | Active AI provider key | `local` |
+| `ALP_STORAGE_PATH` | Local ALP storage path | `/tmp/alp` |
+| `ALP_RAW_DISK` | Raw storage disk hint | `local` |
+| `ALP_PROCESSED_DISK` | Processed storage disk hint | `local` |
 
-## Usage
+## Extensibility Model
 
-### HTTP: upload document (example route)
+ALP now exposes contract-based extension points so host applications can replace default behavior without forking the package.
 
-The package ships with an example `POST /documents` handler that accepts JSON:
+Default bindings:
 
-```json
+- `TextExtractorInterface` -> `ApryseTextExtractor`
+- `EntityDetectorInterface` -> `DefaultEntityDetector`
+- `SummarizerInterface` -> `DefaultSummarizer`
+
+Override example in a host app service provider:
+
+```php
+use App\Contracts\SummarizerInterface;
+use App\Contracts\TextExtractorInterface;
+use App\Services\CustomSummarizer;
+use App\Services\MockTextExtractor;
+
+public function register(): void
 {
-  "name": "invoice-001",
-  "content": "<binary or text content as string for the demo>",
-  "extension": "pdf"
+    $this->app->bind(TextExtractorInterface::class, MockTextExtractor::class);
+    $this->app->bind(SummarizerInterface::class, CustomSummarizer::class);
 }
 ```
 
-Allowed `extension` values in the demo request: `pdf`, `docx`.
+Named pipeline steps are also container-resolved, so constructor injection works for custom implementations and custom steps.
 
-Response (201): document `id`, `name`, and `status`.
+## Usage
 
-### Programmatic: facades (in a Laravel app)
+### Document service
 
-With default Laravel facade aliases, you can resolve:
-
-- **`Document`** facade → `DocumentManager` (ingestion, extraction, tables, layout, AI helpers).
-- **`Pipeline`** facade → `PipelineManager` (runs configured pipelines).
-
-Example (conceptual — adjust imports to your app’s facade wiring):
+Resolve `DocumentManager` when you want to use ALP directly from application code:
 
 ```php
-use App\Facades\Document;
-use App\Facades\Pipeline;
+use App\Services\DocumentManager;
 
-$doc = Document::ingest('My doc', $fileContents, 'pdf');
-$tables = Document::detectTables($someText);
-$layout = Document::parseLayout($someText);
-$summary = Document::summarize($doc->id, $someText);
+$manager = app(DocumentManager::class);
 
-Pipeline::run('extract-basic', ['document_id' => $doc->id]);
+$document = $manager->ingest('invoice-001', $contents, 'pdf');
+$text = $manager->extractText('/tmp/invoice-001.pdf');
+$summary = $manager->summarize($document->id, $text);
+$entities = $manager->extractEntities($document->id, $text, [
+    'amount' => '/\d+\.\d+/',
+]);
 ```
 
-Named pipelines are defined under `config/alp.php` → `pipelines` (e.g. `extract-basic`).
+### Pipeline service
+
+Run named pipelines through `PipelineService`:
+
+```php
+use App\Services\PipelineService;
+
+$result = app(PipelineService::class)->run('extract-basic', [
+    'document_id' => 'doc-1',
+    'file' => '/tmp/invoice-001.pdf',
+]);
+```
+
+The built-in `ExtractText` step expects `file` or `file_path` in the context and writes extracted text back to `text`.
 
 ### Queue jobs
 
-- `ExtractTablesJob` — async table detection from text.
-- `GenerateSummaryJob` — async summarization.
+- `ExtractTablesJob`
+- `GenerateSummaryJob`
 
-Dispatch these from your application when wiring workers; ensure `queue` workers are running (`php artisan queue:work`) and `ALP_QUEUE` / Laravel queue settings match your deployment.
+Ensure workers are running in the host app:
 
-### Structured documents
+```bash
+php artisan queue:work
+```
 
-`StructuredDocumentService` persists summarized/entity payloads through `StructuredDocumentRepositoryInterface`. The default repository writes versioned payloads to a local JSON store under `ALP_STORAGE_PATH` (for easy local execution) and is aligned with the `structured_documents` migration contract.
+## Local Development
+
+Install dependencies:
+
+```bash
+composer install
+```
+
+Run the full quality gate:
+
+```bash
+composer pre-push
+```
+
+Individual commands:
+
+| Command | Purpose |
+|---|---|
+| `composer format:test` | Laravel Pint check |
+| `composer analyse` | PHPStan |
+| `composer test` | PHPUnit |
 
 ## Documentation
 
-- `docs/roadmap.md` — full engineering roadmap (local-only file by default in this repo).
-- `docs/usage.md` — local detailed runbook and package usage notes (local-only file by default in this repo).
+- `docs/extensibility.md` for host-app override examples
+- `docs/roadmap.md` for the local engineering roadmap
+- `docs/usage.md` for local detailed setup notes
 
 ## License
 
-MIT (see `composer.json`).
+MIT.

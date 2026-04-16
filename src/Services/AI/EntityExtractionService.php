@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace App\Services\AI;
 
+use App\Contracts\EntityDetectorInterface;
 use App\Services\StructuredDocumentService;
 
 final class EntityExtractionService
 {
     public function __construct(
-        private readonly AiManager $aiManager,
+        private readonly EntityDetectorInterface $detector,
         private readonly StructuredDocumentService $structuredDocuments
     ) {}
 
@@ -23,16 +24,7 @@ final class EntityExtractionService
         array $schema = [],
         ?string $provider = null
     ): array {
-        $validatedSchema = [];
-        foreach ($schema as $field => $pattern) {
-            if (! is_string($pattern) || @preg_match($pattern, '') === false) {
-                continue;
-            }
-
-            $validatedSchema[$field] = $pattern;
-        }
-
-        $entities = $this->aiManager->provider($provider)->extractEntities($text, $validatedSchema);
+        $entities = $this->detector->detect($text, $schema);
         foreach ($entities as $field => $entity) {
             if (! is_array($entity)) {
                 continue;
