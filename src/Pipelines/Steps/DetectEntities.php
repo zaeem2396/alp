@@ -19,7 +19,12 @@ final class DetectEntities implements PipelineStepInterface
             throw new InvalidArgumentException('Pipeline context must contain extracted text before entity detection.');
         }
 
-        $context['entities'] = $this->detector->detect($text);
+        $schema = $context['schema'] ?? [];
+        if (! is_array($schema)) {
+            throw new InvalidArgumentException('Pipeline context schema must be an array of field patterns.');
+        }
+
+        $context['entities'] = $this->detector->detect($text, $schema);
 
         return $context;
     }

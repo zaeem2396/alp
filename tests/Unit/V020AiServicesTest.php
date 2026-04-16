@@ -6,6 +6,7 @@ namespace Tests\Unit;
 
 use App\Contracts\EntityDetectorInterface;
 use App\Contracts\SummarizerInterface;
+use App\Infrastructure\AI\DefaultEntityDetector;
 use App\Repositories\StructuredDocumentRepository;
 use App\Services\AI\AiManager;
 use App\Services\AI\AnthropicProvider;
@@ -31,7 +32,7 @@ final class V020AiServicesTest extends TestCase
         }, $store);
         $entityService = new EntityExtractionService(new class implements EntityDetectorInterface
         {
-            public function detect(string $text): array
+            public function detect(string $text, array $schema = []): array
             {
                 preg_match('/\d+\.\d+/', $text, $amountMatches);
 
@@ -52,6 +53,19 @@ final class V020AiServicesTest extends TestCase
         self::assertNotSame('', $summary);
         self::assertArrayHasKey('amount', $entities);
         self::assertNotNull($store->retrieve('doc-202'));
+    }
+
+    public function test_entity_extraction_uses_schema_patterns_for_detection(): void
+    {
+        $store = new StructuredDocumentService(new StructuredDocumentRepository);
+        $entityService = new EntityExtractionService(new DefaultEntityDetector, $store);
+
+        $entities = $entityService->extract('doc-203', 'Reference code: INV-2048', [
+            'invoice_code' => '/INV-\d+/',
+        ]);
+
+        self::assertSame('INV-2048', $entities['invoice_code']['value']);
+        self::assertArrayNotHasKey('amount', $entities);
     }
 
     public function test_document_qa_returns_citations(): void
