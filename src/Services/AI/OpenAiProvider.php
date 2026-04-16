@@ -27,7 +27,7 @@ final class OpenAiProvider implements AiProviderInterface
             $entities[$field] = [
                 'value' => $matches[0] ?? null,
                 'confidence' => $matches === [] ? 0.0 : 0.92,
-                'model' => 'openai-placeholder',
+                'model' => 'openai',
             ];
         }
 
