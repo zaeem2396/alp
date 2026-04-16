@@ -11,8 +11,14 @@ use App\Contracts\AiProviderInterface;
 use App\Contracts\ApryseClientInterface;
 use App\Contracts\DocumentRepositoryInterface;
 use App\Contracts\DocumentStorageInterface;
+use App\Contracts\EntityDetectorInterface;
 use App\Contracts\LayoutParserInterface;
 use App\Contracts\StructuredDocumentRepositoryInterface;
+use App\Contracts\SummarizerInterface;
+use App\Contracts\TextExtractorInterface;
+use App\Infrastructure\AI\DefaultEntityDetector;
+use App\Infrastructure\AI\DefaultSummarizer;
+use App\Infrastructure\Apryse\ApryseTextExtractor;
 use App\Infrastructure\Apryse\Clients\ApryseClientAdapter;
 use App\Infrastructure\Apryse\Services\ApryseExtractionService;
 use App\Infrastructure\Storage\DocumentStorageAdapter;
@@ -53,6 +59,9 @@ final class ALPServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__.'/../../../config/alp.php', 'alp');
 
         $this->app->singleton(ApryseClientInterface::class, AprysePhpClient::class);
+        $this->app->bind(TextExtractorInterface::class, ApryseTextExtractor::class);
+        $this->app->bind(EntityDetectorInterface::class, DefaultEntityDetector::class);
+        $this->app->bind(SummarizerInterface::class, DefaultSummarizer::class);
         $this->app->scoped(DocumentRepositoryInterface::class, DocumentRepository::class);
         $this->app->singleton(DocumentStorageInterface::class, function ($app): DocumentStorageInterface {
             $basePath = (string) $app['config']->get('alp.storage.base_path', '/tmp/alp');
@@ -116,7 +125,7 @@ final class ALPServiceProvider extends ServiceProvider
             /** @var array<string, list<class-string<PipelineStepInterface>>> $pipelines */
             $pipelines = (array) $app['config']->get('alp.pipelines', []);
 
-            return new PipelineManager($pipelines);
+            return new PipelineManager($pipelines, static fn (string $stepClass): object => $app->make($stepClass));
         });
         $this->app->scoped(PipelineEngineInterface::class, PipelineEngine::class);
     }
