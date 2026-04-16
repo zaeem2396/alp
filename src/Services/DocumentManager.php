@@ -27,10 +27,7 @@ final class DocumentManager
         return $this->ingestion->ingest($name, $content, $extension);
     }
 
-    /**
-     * @return array{pages: list<array{number:int,text:string}>, blocks: list<array{page:int,text:string}>}
-     */
-    public function extractText(string $filePath): array
+    public function extractText(string $filePath): string
     {
         return $this->textExtraction->extract($filePath);
     }
