@@ -125,6 +125,7 @@ The built-in `ExtractText` step expects `file` or `file_path` in the context and
 Optional context keys for pipeline runs:
 
 - `_correlation_id` (string): forwarded to `PipelineStarted` and run logging for tracing
+- `_unique_lock` (string): when dispatching `RunPipelineJob`, preferred key for `ShouldBeUnique` deduplication (falls back to `_correlation_id`, then a hash of the context payload)
 - `_async` (bool): when the dispatcher mode is `auto`, a `true` value routes execution through `RunPipelineJob`
 
 ### Pipeline dispatcher

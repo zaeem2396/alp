@@ -7,6 +7,8 @@ namespace App\Application\Services;
 use App\Application\Contracts\PipelineRunStoreInterface;
 use App\Application\Events\PipelineFailed;
 use App\Contracts\AlpEventBusInterface;
+use App\Domain\Pipeline\Contracts\NonRetryablePipelineFailure;
+use Throwable;
 
 final class PipelineFailureService
 {
@@ -23,9 +25,12 @@ final class PipelineFailureService
         string $pipelineName,
         int $failedStepIndex,
         string $stepClass,
-        string $message,
+        Throwable $failure,
         array $context,
     ): void {
+        $message = $failure->getMessage();
+        $retryable = $this->isRetryable($failure);
+
         $this->runStore->finalizeFailedRun($runId, $failedStepIndex, $stepClass, $message);
         $this->eventBus->publish(new PipelineFailed(
             $runId,
@@ -34,6 +39,12 @@ final class PipelineFailureService
             $stepClass,
             $message,
             $context,
+            $retryable,
         ));
+    }
+
+    private function isRetryable(Throwable $failure): bool
+    {
+        return ! ($failure instanceof NonRetryablePipelineFailure);
     }
 }

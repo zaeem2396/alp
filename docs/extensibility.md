@@ -90,3 +90,9 @@ Each step writes its output back into the shared context array and avoids hardco
 - Domain helpers such as `App\Domain\Pipeline\Definitions\PipelineDefinitionRegistry` expose the same pipeline map that backs `config/alp.php`, which is useful when generating documentation or validating registrations in host apps.
 
 Lifecycle events published through `AlpEventBusInterface` include `PipelineStarted`, `PipelineStepCompleted`, `PipelineCompleted`, and `PipelineFailed`.
+
+### Pipeline failures, retries, and compensation
+
+- Implement `App\Domain\Pipeline\Contracts\NonRetryablePipelineFailure` on custom exception classes when a failure should not be retried by queue workers; `PipelineFailed` carries a `retryable` flag derived from that marker.
+- Optional undo logic: implement `App\Pipelines\Contracts\PipelineStepCompensationInterface` on a step class to run `compensate()` for each successful step in reverse order if a later step throws.
+- For queued runs, `RunPipelineJob` implements `ShouldBeUnique` (see `_unique_lock` / `_correlation_id` in `README.md`) to approximate the roadmap’s non-overlapping dispatch behaviour.

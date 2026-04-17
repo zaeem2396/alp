@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Pipelines;
 
+use App\Pipelines\Contracts\PipelineStepCompensationInterface;
 use App\Pipelines\Contracts\PipelineStepInterface;
 use Closure;
 use InvalidArgumentException;
@@ -50,6 +51,9 @@ final class PipelineManager
             throw new InvalidArgumentException(sprintf('Pipeline [%s] is not defined.', $name));
         }
 
+        /** @var list<array{0: PipelineStepInterface, 1: array<string, mixed>}> $completedForCompensation */
+        $completedForCompensation = [];
+
         foreach ($this->namedPipelines[$name] as $index => $stepClass) {
             $step = $this->resolver instanceof Closure
                 ? ($this->resolver)($stepClass)
@@ -60,15 +64,19 @@ final class PipelineManager
             }
 
             $started = hrtime(true);
+            $contextBeforeStep = $context;
             try {
                 $context = $step->handle($context);
             } catch (\Throwable $e) {
+                $this->compensateCompletedSteps($completedForCompensation);
+
                 if ($onFailure instanceof Closure) {
                     $onFailure($index, $stepClass, $e, $context);
                 }
 
                 throw $e;
             }
+            $completedForCompensation[] = [$step, $contextBeforeStep];
             $ended = hrtime(true);
 
             if ($afterStep instanceof Closure) {
@@ -77,5 +85,26 @@ final class PipelineManager
         }
 
         return $context;
+    }
+
+    /**
+     * @param  list<array{0: PipelineStepInterface, 1: array<string, mixed>}>  $completed
+     */
+    private function compensateCompletedSteps(array $completed): void
+    {
+        while ($completed !== []) {
+            /** @var array{0: PipelineStepInterface, 1: array<string, mixed>} $pair */
+            $pair = array_pop($completed);
+            [$step, $contextBeforeStep] = $pair;
+
+            if (! $step instanceof PipelineStepCompensationInterface) {
+                continue;
+            }
+
+            try {
+                $step->compensate($contextBeforeStep);
+            } catch (\Throwable) {
+            }
+        }
     }
 }

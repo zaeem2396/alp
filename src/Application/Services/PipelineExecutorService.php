@@ -46,7 +46,7 @@ final class PipelineExecutorService implements PipelineExecutorInterface
                     $pipelineName,
                     $index,
                     $stepClass,
-                    $e->getMessage(),
+                    $e,
                     $ctx,
                 );
             },

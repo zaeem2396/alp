@@ -16,5 +16,6 @@ final readonly class PipelineFailed
         public string $stepClass,
         public string $message,
         public array $context,
+        public bool $retryable = true,
     ) {}
 }
