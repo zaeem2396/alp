@@ -34,21 +34,38 @@ final class PipelineManager
 
     /**
      * @param  array<string, mixed>  $context
+     * @param  (\Closure(int, class-string<PipelineStepInterface>, array<string, mixed>): void)|null  $beforeStep
+     * @param  (\Closure(int, class-string<PipelineStepInterface>, array<string, mixed>, int, int): void)|null  $afterStep
      * @return array<string, mixed>
      */
-    public function runNamed(string $name, array $context = []): array
-    {
+    public function runNamed(
+        string $name,
+        array $context = [],
+        ?Closure $beforeStep = null,
+        ?Closure $afterStep = null,
+    ): array {
         if (! array_key_exists($name, $this->namedPipelines)) {
             throw new InvalidArgumentException(sprintf('Pipeline [%s] is not defined.', $name));
         }
 
-        $steps = [];
-        foreach ($this->namedPipelines[$name] as $stepClass) {
-            $steps[] = $this->resolver instanceof Closure
+        foreach ($this->namedPipelines[$name] as $index => $stepClass) {
+            $step = $this->resolver instanceof Closure
                 ? ($this->resolver)($stepClass)
                 : new $stepClass;
+
+            if ($beforeStep instanceof Closure) {
+                $beforeStep($index, $stepClass, $context);
+            }
+
+            $started = hrtime(true);
+            $context = $step->handle($context);
+            $ended = hrtime(true);
+
+            if ($afterStep instanceof Closure) {
+                $afterStep($index, $stepClass, $context, $started, $ended);
+            }
         }
 
-        return $this->run($steps, $context);
+        return $context;
     }
 }
