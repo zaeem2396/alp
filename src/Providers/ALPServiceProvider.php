@@ -8,6 +8,7 @@ use App\Application\Services\DocumentIntelligenceService;
 use App\Application\Services\PipelineOrchestrator;
 use App\Console\InstallAlpCommand;
 use App\Contracts\AiProviderInterface;
+use App\Contracts\AlpEventBusInterface;
 use App\Contracts\ApryseClientInterface;
 use App\Contracts\DocumentRepositoryInterface;
 use App\Contracts\DocumentStorageInterface;
@@ -19,6 +20,7 @@ use App\Contracts\TextExtractorInterface;
 use App\Infrastructure\AI\DefaultEntityDetector;
 use App\Infrastructure\AI\DefaultSummarizer;
 use App\Infrastructure\Apryse\ApryseTextExtractor;
+use App\Infrastructure\Events\LaravelAlpEventBus;
 use App\Infrastructure\Apryse\Clients\ApryseClientAdapter;
 use App\Infrastructure\Apryse\Services\ApryseExtractionService;
 use App\Infrastructure\Storage\DocumentStorageAdapter;
@@ -50,6 +52,7 @@ use App\Services\PipelineService;
 use App\Services\StructuredDocumentService;
 use App\Services\TableDetectionService;
 use App\Services\TextExtractionService;
+use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\ServiceProvider;
 
 final class ALPServiceProvider extends ServiceProvider
@@ -57,6 +60,10 @@ final class ALPServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->mergeConfigFrom(__DIR__.'/../../../config/alp.php', 'alp');
+
+        $this->app->singleton(AlpEventBusInterface::class, function ($app): AlpEventBusInterface {
+            return new LaravelAlpEventBus($app->make(Dispatcher::class));
+        });
 
         $this->app->singleton(ApryseClientInterface::class, AprysePhpClient::class);
         $this->app->bind(TextExtractorInterface::class, ApryseTextExtractor::class);
