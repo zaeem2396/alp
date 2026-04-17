@@ -13,6 +13,8 @@ final class PipelineDefinition
      */
     public function __construct(
         public readonly string $name,
-        public readonly array $steps
+        public readonly array $steps,
+        public readonly ?string $description = null,
+        public readonly ?string $version = null,
     ) {}
 }
