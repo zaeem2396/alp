@@ -36,6 +36,7 @@ final class PipelineManager
      * @param  array<string, mixed>  $context
      * @param  (\Closure(int, class-string<PipelineStepInterface>, array<string, mixed>): void)|null  $beforeStep
      * @param  (\Closure(int, class-string<PipelineStepInterface>, array<string, mixed>, int, int): void)|null  $afterStep
+     * @param  (\Closure(int, class-string<PipelineStepInterface>, \Throwable, array<string, mixed>): void)|null  $onFailure
      * @return array<string, mixed>
      */
     public function runNamed(
@@ -43,6 +44,7 @@ final class PipelineManager
         array $context = [],
         ?Closure $beforeStep = null,
         ?Closure $afterStep = null,
+        ?Closure $onFailure = null,
     ): array {
         if (! array_key_exists($name, $this->namedPipelines)) {
             throw new InvalidArgumentException(sprintf('Pipeline [%s] is not defined.', $name));
@@ -58,7 +60,15 @@ final class PipelineManager
             }
 
             $started = hrtime(true);
-            $context = $step->handle($context);
+            try {
+                $context = $step->handle($context);
+            } catch (\Throwable $e) {
+                if ($onFailure instanceof Closure) {
+                    $onFailure($index, $stepClass, $e, $context);
+                }
+
+                throw $e;
+            }
             $ended = hrtime(true);
 
             if ($afterStep instanceof Closure) {
