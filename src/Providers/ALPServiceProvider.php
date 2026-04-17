@@ -22,14 +22,14 @@ use App\Contracts\LayoutParserInterface;
 use App\Contracts\StructuredDocumentRepositoryInterface;
 use App\Contracts\SummarizerInterface;
 use App\Contracts\TextExtractorInterface;
+use App\Domain\Pipeline\Definitions\PipelineDefinitionRegistry;
 use App\Infrastructure\AI\DefaultEntityDetector;
 use App\Infrastructure\AI\DefaultSummarizer;
 use App\Infrastructure\Apryse\ApryseTextExtractor;
-use App\Domain\Pipeline\Definitions\PipelineDefinitionRegistry;
-use App\Infrastructure\Events\LaravelAlpEventBus;
-use App\Infrastructure\Persistence\DatabasePipelineRunStore;
 use App\Infrastructure\Apryse\Clients\ApryseClientAdapter;
 use App\Infrastructure\Apryse\Services\ApryseExtractionService;
+use App\Infrastructure\Events\LaravelAlpEventBus;
+use App\Infrastructure\Persistence\DatabasePipelineRunStore;
 use App\Infrastructure\Storage\DocumentStorageAdapter;
 use App\Normalizers\DocxNormalizer;
 use App\Normalizers\PdfNormalizer;
@@ -60,8 +60,8 @@ use App\Services\StructuredDocumentService;
 use App\Services\TableDetectionService;
 use App\Services\TextExtractionService;
 use Illuminate\Contracts\Bus\Dispatcher as BusDispatcher;
-use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Contracts\Config\Repository as ConfigRepository;
+use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\ServiceProvider;
 
 final class ALPServiceProvider extends ServiceProvider

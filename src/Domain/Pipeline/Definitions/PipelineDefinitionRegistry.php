@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Pipeline\Definitions;
 
-use App\Domain\Pipeline\Contracts\PipelineStepInterface;
+use App\Pipelines\Contracts\PipelineStepInterface;
 use InvalidArgumentException;
 
 final class PipelineDefinitionRegistry
@@ -30,12 +30,15 @@ final class PipelineDefinitionRegistry
             throw new InvalidArgumentException(sprintf('Pipeline [%s] is not defined.', $name));
         }
 
-        /** @var list<class-string<PipelineStepInterface>> */
+        /** @var list<class-string<\App\Domain\Pipeline\Contracts\PipelineStepInterface>> */
         return array_values($this->pipelines[$name]);
     }
 
     public function definitionFor(string $name): PipelineDefinition
     {
-        return new PipelineDefinition($name, $this->stepClassesFor($name));
+        /** @var list<class-string<\App\Domain\Pipeline\Contracts\PipelineStepInterface>> $steps */
+        $steps = $this->stepClassesFor($name);
+
+        return new PipelineDefinition($name, $steps);
     }
 }

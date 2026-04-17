@@ -34,9 +34,9 @@ final class PipelineManager
 
     /**
      * @param  array<string, mixed>  $context
-     * @param  (\Closure(int, class-string<PipelineStepInterface>, array<string, mixed>): void)|null  $beforeStep
-     * @param  (\Closure(int, class-string<PipelineStepInterface>, array<string, mixed>, int, int): void)|null  $afterStep
-     * @param  (\Closure(int, class-string<PipelineStepInterface>, \Throwable, array<string, mixed>): void)|null  $onFailure
+     * @param  (Closure(int, class-string<PipelineStepInterface>, array<string, mixed>): void)|null  $beforeStep
+     * @param  (Closure(int, class-string<PipelineStepInterface>, array<string, mixed>, int, int): void)|null  $afterStep
+     * @param  (Closure(int, class-string<PipelineStepInterface>, \Throwable, array<string, mixed>): void)|null  $onFailure
      * @return array<string, mixed>
      */
     public function runNamed(

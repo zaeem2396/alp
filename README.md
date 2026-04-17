@@ -12,6 +12,7 @@ ALP is a Laravel-first document processing package that ingests documents, extra
 
 - **v0.1.0**: ingestion, normalization, extraction, events, and service-provider wiring
 - **v0.2.0**: table/layout parsing, structured artifact persistence, named pipelines, async jobs, and interface-driven extension points for extraction and AI summarization/entity detection
+- **v0.3.0**: instrumented pipeline execution (`PipelineExecutorService`), run logging tables, `AlpEventBusInterface`, sync/queue/auto dispatch via `PipelineDispatcher`, `RunPipelineJob`, and named queue topology for workloads
 
 ## Install In A Laravel App
 
@@ -40,7 +41,9 @@ Edit `config/alp.php` in the host application after publishing it.
 | Key | Purpose |
 |---|---|
 | `default_pipeline` | Default named pipeline key |
-| `queue` | Queue name/context used by package jobs |
+| `queue` | Legacy default queue name used when a specific queue mapping is absent |
+| `queues.high` / `queues.default` / `queues.ai` / `queues.index` / `queues.pipelines` | Named queue endpoints for prioritised workloads (pipelines default to `queues.pipelines`) |
+| `pipeline.execution_mode` | Default execution mode for `PipelineDispatcher`: `sync`, `queue`, or `auto` |
 | `ai.default` | Default AI provider key |
 | `pipelines` | Named pipeline definitions as step class lists |
 | `storage.base_path` | Base path for raw and derived local storage |
@@ -49,7 +52,10 @@ Edit `config/alp.php` in the host application after publishing it.
 
 | Variable | Purpose | Default |
 |---|---|---|
-| `ALP_QUEUE` | Queue name/context | `default` |
+| `ALP_QUEUE` | Fallback queue when `ALP_QUEUE_PIPELINES` is unset | `default` |
+| `ALP_QUEUE_HIGH` / `ALP_QUEUE_DEFAULT` / `ALP_QUEUE_AI` / `ALP_QUEUE_INDEX` | Named queue bindings for ALP workloads | `alp-high`, `alp-default`, `alp-ai`, `alp-index` |
+| `ALP_QUEUE_PIPELINES` | Queue used by `RunPipelineJob` | falls back to `ALP_QUEUE` |
+| `ALP_PIPELINE_EXECUTION_MODE` | Default `PipelineDispatcher` mode | `sync` |
 | `ALP_AI_PROVIDER` | Active AI provider key | `local` |
 | `ALP_STORAGE_PATH` | Local ALP storage path | `/tmp/alp` |
 | `ALP_RAW_DISK` | Raw storage disk hint | `local` |
@@ -116,10 +122,38 @@ $result = app(PipelineService::class)->run('extract-basic', [
 
 The built-in `ExtractText` step expects `file` or `file_path` in the context and writes extracted text back to `text`.
 
+Optional context keys for pipeline runs:
+
+- `_correlation_id` (string): forwarded to `PipelineStarted` and run logging for tracing
+- `_async` (bool): when the dispatcher mode is `auto`, a `true` value routes execution through `RunPipelineJob`
+
+### Pipeline dispatcher
+
+Resolve `PipelineDispatcher` when you want sync execution or an explicit queue hand-off:
+
+```php
+use App\Application\Enums\PipelineExecutionMode;
+use App\Application\Services\PipelineDispatcher;
+
+$dispatcher = app(PipelineDispatcher::class);
+
+$result = $dispatcher->dispatch('extract-basic', [
+    'file' => '/tmp/invoice-001.pdf',
+], PipelineExecutionMode::Sync);
+
+$queued = $dispatcher->dispatch('extract-basic', [
+    'file' => '/tmp/invoice-001.pdf',
+    '_async' => true,
+], PipelineExecutionMode::Auto);
+```
+
+When a job is queued the return value is a small associative array (`queued`, `pipeline`, `queue`) instead of the pipeline context payload.
+
 ### Queue jobs
 
 - `ExtractTablesJob`
 - `GenerateSummaryJob`
+- `RunPipelineJob`
 
 Ensure workers are running in the host app:
 
