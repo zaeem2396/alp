@@ -4,7 +4,12 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Application\Contracts\PipelineExecutorInterface;
+use App\Application\Contracts\PipelineRunStoreInterface;
 use App\Application\Services\DocumentIntelligenceService;
+use App\Application\Services\PipelineDispatcher;
+use App\Application\Services\PipelineExecutorService;
+use App\Application\Services\PipelineFailureService;
 use App\Application\Services\PipelineOrchestrator;
 use App\Console\InstallAlpCommand;
 use App\Contracts\AiProviderInterface;
@@ -20,7 +25,9 @@ use App\Contracts\TextExtractorInterface;
 use App\Infrastructure\AI\DefaultEntityDetector;
 use App\Infrastructure\AI\DefaultSummarizer;
 use App\Infrastructure\Apryse\ApryseTextExtractor;
+use App\Domain\Pipeline\Definitions\PipelineDefinitionRegistry;
 use App\Infrastructure\Events\LaravelAlpEventBus;
+use App\Infrastructure\Persistence\DatabasePipelineRunStore;
 use App\Infrastructure\Apryse\Clients\ApryseClientAdapter;
 use App\Infrastructure\Apryse\Services\ApryseExtractionService;
 use App\Infrastructure\Storage\DocumentStorageAdapter;
@@ -52,7 +59,9 @@ use App\Services\PipelineService;
 use App\Services\StructuredDocumentService;
 use App\Services\TableDetectionService;
 use App\Services\TextExtractionService;
+use Illuminate\Contracts\Bus\Dispatcher as BusDispatcher;
 use Illuminate\Contracts\Events\Dispatcher;
+use Illuminate\Contracts\Config\Repository as ConfigRepository;
 use Illuminate\Support\ServiceProvider;
 
 final class ALPServiceProvider extends ServiceProvider
@@ -134,11 +143,29 @@ final class ALPServiceProvider extends ServiceProvider
 
             return new PipelineManager($pipelines, static fn (string $stepClass): object => $app->make($stepClass));
         });
+        $this->app->singleton(PipelineDefinitionRegistry::class, function ($app): PipelineDefinitionRegistry {
+            /** @var array<string, list<class-string<PipelineStepInterface>>> $pipelines */
+            $pipelines = (array) $app['config']->get('alp.pipelines', []);
+
+            return new PipelineDefinitionRegistry($pipelines);
+        });
+        $this->app->singleton(PipelineRunStoreInterface::class, DatabasePipelineRunStore::class);
+        $this->app->scoped(PipelineFailureService::class);
+        $this->app->scoped(PipelineExecutorInterface::class, PipelineExecutorService::class);
+        $this->app->scoped(PipelineDispatcher::class, function ($app): PipelineDispatcher {
+            return new PipelineDispatcher(
+                $app->make(BusDispatcher::class),
+                $app->make(PipelineExecutorInterface::class),
+                $app->make(ConfigRepository::class),
+            );
+        });
         $this->app->scoped(PipelineEngineInterface::class, PipelineEngine::class);
     }
 
     public function boot(): void
     {
+        $this->loadMigrationsFrom(__DIR__.'/../../../database/migrations');
+
         $this->publishes([
             __DIR__.'/../../../config/alp.php' => $this->app->basePath('config/alp.php'),
         ], 'alp-config');
